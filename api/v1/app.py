@@ -36,7 +36,7 @@ def error_400(error):
 @app.errorhandler(404)
 def error_404(error):
     '''This handles the 404 HTTP error code'''
-    return jsonify(error='Not found'), 404
+    return make_response(jsonify({'error': 'Not found'}), 404)
 
 
 if __name__ == '__main__':
