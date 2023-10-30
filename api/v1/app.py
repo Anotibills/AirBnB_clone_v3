@@ -9,13 +9,13 @@ from models import storage
 from api.v1.views import app_views
 
 
-app = Flask(__name)
+app = Flask(__name__)
 
-app_host = os.getenv('HBNB_API_HOST', '0.0.0.0')
-app_port = int(os.getenv('HBNB_API_PORT', '5000'))
-app.url_map.strict_slashes = False
+app_host = os.getenv('HBNB_API_HOST')
+app_port = os.getenv('HBNB_API_PORT')
 app.register_blueprint(app_views)
-CORS(app, resources={'/*': {'origins': app_host}})
+app.url_map.strict_slashes = False
+CORS(app, resources={r'/*': {'origins': '0.0.0.0'}})
 
 
 @app.teardown_appcontext
@@ -40,10 +40,6 @@ def error_404(error):
 
 
 if __name__ == '__main__':
-    app_host = os.getenv('HBNB_API_HOST', '0.0.0.0')
-    app_port = int(os.getenv('HBNB_API_PORT', '5000'))
-    app.run(
-        host=app_host,
-        port=app_port,
-        threaded=True
-    )
+    app_host = '0.0.0.0' if app_host is None else app_host
+    app_port = '5000' if app_port is None else app_port
+    app.run(host=app_host, port=app_port, threaded=True)

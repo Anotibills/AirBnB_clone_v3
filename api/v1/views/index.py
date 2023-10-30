@@ -13,7 +13,7 @@ from models.state import State
 from models.user import User
 
 
-@app_views.route('/status')
+@app_views.route('/status', methods=['GET'])
 def get_status():
     '''This gets the status of the API'''
     return jsonify(status='OK')
