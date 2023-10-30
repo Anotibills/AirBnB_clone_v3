@@ -4,13 +4,14 @@ Script that creates a new view for Place objects that handles
 all default RESTful API
 """
 
-from flask import Flask, jsonify, abort, request
+from flask import Flask, jsonify, abort, request, make_response
 from models import storage
 from api.v1.views import app_views
 from models.place import Place
 from models.state import State
 from models.city import City
 from models.amenity import Amenity
+import json
 
 
 @app_views.route('/cities/<city_id>/places', methods=['GET'],
@@ -88,7 +89,7 @@ def places_search():
     """
     Retrieves all Place objects depending of the JSON
     in the body of the request
-    """
+    
     try:
         data = request.get_json()
     except Exception as e:
@@ -124,3 +125,55 @@ def places_search():
                 places_result.remove(place)
 
     return jsonify([place.to_dict() for place in places_result])
+    """
+    """endpoint to retrieves all PlaceObj using passed JSON"""
+    abortMSG = "Not a JSON"
+    if request.get_json() is None:
+        abort(400, description=abortMSG)
+    data = request.get_json()
+    if data and len(data):
+        states = data.get('states', None)
+        cities = data.get('cities', None)
+        amenities = data.get('amenities', None)
+    if not data or not len(data) or (
+            not states and
+            not cities and
+            not amenities):
+        places = storage.all(Place).values()
+        placesList = []
+        placesList = [place.to_dict() for place in places]
+        res = json.dumps(placesList)
+        response = make_response(res, 200)
+        response.headers['Content-Type'] = 'application/json'
+        return response
+    placesList = []
+    if states:
+        statesObj = [storage.get(State, s_id) for s_id in states]
+        for state in statesObj:
+            if state:
+                for city in state.cities:
+                    if city:
+                        placesList.extend(place for place in city.places)
+    if cities:
+        city_obj = [storage.get(City, c_id) for c_id in cities]
+        for city in city_obj:
+            if city:
+                for place in city.places:
+                    if place not in placesList:
+                        placesList.append(place)
+    if amenities:
+        if not placesList:
+            placesList = storage.all(Place).values()
+        amenities_obj = [storage.get(Amenity, a_id) for a_id in amenities]
+        placesList = [place for place in placesList
+                      if all([am in place.amenities
+                             for am in amenities_obj])]
+    places = []
+    for aPlace in placesList:
+        filtered = aPlace.to_dict()
+        filtered.pop('amenities', None)
+        places.append(filtered)
+    res = json.dumps(places)
+    response = make_response(res, 200)
+    response.headers['Content-Type'] = 'application/json'
+    return response
