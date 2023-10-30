@@ -27,6 +27,11 @@ class User(BaseModel, Base):
 
     def __init__(self, *args, **kwargs):
         """initializes user"""
-        if kwargs.get('password'):
-            self.password = hashlib.md5(kwargs['password'].encode()).hexdigest()
         super().__init__(*args, **kwargs)
+
+    def __setattr__(self, key, value):
+        """ Hashed password to a MD5 value instead of cleartex """
+
+        if key == 'password':
+            value = hashlib.md5(value.encode()).hexdigest()
+        super().__setattr__(key, value)    
