@@ -8,11 +8,14 @@ from flask import Flask, jsonify, abort, request
 from models import storage
 from api.v1.views import app_views
 from models.place import Place
+from models.state import State
+from models.city import City
+from models.amenity import Amenity
 
 
 @app_views.route('/cities/<city_id>/places', methods=['GET'],
                  strict_slashes=False)
-def get_place_by_city(city_id):
+def get_places(city_id):
     '''This return places in the city using GET'''
     city = storage.get("City", city_id)
     if city is None:
@@ -22,7 +25,7 @@ def get_place_by_city(city_id):
 
 
 @app_views.route('/places/<place_id>', methods=['GET'], strict_slashes=False)
-def get_place_id(place_id):
+def get_place(place_id):
     '''This returns a place and its ID using GET'''
     place = storage.get("Place", place_id)
     if place is None:
@@ -78,3 +81,46 @@ def update_place(place_id):
             setattr(obj, key, value)
     obj.save()
     return jsonify(obj.to_dict()), 200
+
+
+@app_views.route('/places_search', methods=['POST'], strict_slashes=False)
+def places_search():
+    """
+    Retrieves all Place objects depending of the JSON
+    in the body of the request
+    """
+    try:
+        data = request.get_json()
+    except Exception as e:
+        abort(400, description='Not a JSON')
+
+    states_ids = data.get('states', [])
+    cities_ids = data.get('cities', [])
+    amenities_ids = data.get('amenities', [])
+
+    if not states_ids and not cities_ids and not amenities_ids:
+        places = storage.all(Place).values()
+        return jsonify([place.to_dict() for place in places])
+
+    places_result = set()
+
+    for state_id in states_ids:
+        state = storage.get(State, state_id)
+        if state:
+            for city in state.cities:
+                places_result.update(city.places)
+
+    for city_id in cities_ids:
+        city = storage.get(City, city_id)
+        if city:
+            places_result.update(city.places)
+
+    if amenities_ids:
+        amenities = [
+            storage.get(Amenity, amenity_id)
+            for amenity_id in amenities_ids]
+        for place in list(places_result):
+            if not all(amenity in place.amenities for amenity in amenities):
+                places_result.remove(place)
+
+    return jsonify([place.to_dict() for place in places_result])
