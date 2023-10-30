@@ -89,7 +89,7 @@ def places_search():
     """
     Retrieves all Place objects depending of the JSON
     in the body of the request
-    
+
     try:
         data = request.get_json()
     except Exception as e:
