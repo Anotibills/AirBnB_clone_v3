@@ -3,7 +3,7 @@
 Sscript for endpoint (route) that will return the API status
 """
 import os
-from flask import Flask, jsonify
+from flask import Flask, jsonify, make_response
 from flask_cors import CORS
 from models import storage
 from api.v1.views import app_views
